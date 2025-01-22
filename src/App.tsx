@@ -2,9 +2,18 @@ import { Suspense, lazy, useEffect, useState, type ReactElement } from "react";
 import { Typewriter } from "@/components/ui/typewriter";
 import { Button } from "@/components/ui/button"; // Adjust path to your shadcn/ui button
 import "./App.css";
-const DMG = new URL("https://releases.poleshift.cloud/poleshift_0.1.9_aarch64.dmg", import.meta.url).href;
-const AppImage = new URL("https://releases.poleshift.cloud/poleshift_0.1.9_amd64.AppImage", import.meta.url).href;
-const NSIS = new URL("https://releases.poleshift.cloud/poleshift_0-1.1.9_x64-setup.exe", import.meta.url).href;
+const DMG = new URL(
+    "https://releases.poleshift.cloud/poleshift_0.1.9_aarch64.dmg",
+    import.meta.url
+).href;
+const AppImage = new URL(
+    "https://releases.poleshift.cloud/poleshift_0.1.9_amd64.AppImage",
+    import.meta.url
+).href;
+const NSIS = new URL(
+    "https://releases.poleshift.cloud/poleshift_0-1.1.9_x64-setup.exe",
+    import.meta.url
+).href;
 
 // 1. Import icons for Windows, Mac, and Linux
 import { FaWindows, FaApple, FaLinux } from "react-icons/fa";
@@ -23,10 +32,19 @@ export function meta() {
     ];
 }
 
+// 2. Define your Platform type with a union of IDs
+type PlatformId = "windows" | "mac" | "linux";
+
+interface Platform {
+    id: PlatformId;
+    label: string;
+    link: string;
+}
+
 const texts = [" elegant", " intuitive", " fun", " your data"];
 
 // Utility to detect user OS
-function getUserPlatform() {
+function getUserPlatform(): PlatformId {
     if (typeof window === "undefined") {
         // Fallback for SSR if needed
         return "linux";
@@ -45,19 +63,19 @@ function getUserPlatform() {
 }
 
 export default function App() {
-    // Track both the detected platform and the ordered list
-    const [detectedPlatform, setDetectedPlatform] = useState<string>("linux");
-    const [platformsInOrder, setPlatformsInOrder] = useState([]);
+    // 3. Track both the detected platform and the ordered list with proper types
+    const [detectedPlatform, setDetectedPlatform] = useState<PlatformId>("linux");
+    const [platformsInOrder, setPlatformsInOrder] = useState<Platform[]>([]);
 
     // Define your download platforms
-    const platforms = [
+    const platforms: Platform[] = [
         { id: "windows", label: "Download for Windows", link: NSIS },
         { id: "mac", label: "Download for Mac", link: DMG },
         { id: "linux", label: "Download for Linux", link: AppImage },
     ];
 
     // Icons for each platform
-    const platformIcons: Record<string, ReactElement> = {
+    const platformIcons: Record<PlatformId, ReactElement> = {
         windows: <FaWindows />,
         mac: <FaApple />,
         linux: <FaLinux />,
@@ -69,7 +87,7 @@ export default function App() {
         setDetectedPlatform(userPlatform);
 
         const primaryPlatform =
-            platforms.find((p) => p.id === userPlatform) || platforms[2];
+            platforms.find((p) => p.id === userPlatform) ?? platforms[2];
         const rest = platforms.filter((p) => p.id !== primaryPlatform.id);
         setPlatformsInOrder([primaryPlatform, ...rest]);
     }, []);
@@ -88,9 +106,7 @@ export default function App() {
             <section className="relative z-10 grid h-screen grid-cols-1 md:grid-cols-2 items-center justify-items-center overflow-hidden">
                 {/* Left Column: Text */}
                 <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto px-4 pb-10">
-                    <p className="font-mono text-3xl font-semibold">
-                        Poleshift data is
-                    </p>
+                    <p className="font-mono text-3xl font-semibold">Poleshift data is</p>
                     <p className="mt-2 text-sm font-semibold text-base-900">
                         <Typewriter texts={texts} delay={0.5} baseText="" />
                     </p>
@@ -120,12 +136,7 @@ export default function App() {
                             {/* 2) Secondary platforms side-by-side, same width */}
                             <div className="flex gap-2">
                                 {platformsInOrder.slice(1).map((p) => (
-                                    <Button
-                                        key={p.id}
-                                        variant="default"
-                                        asChild
-                                        className="flex-1"
-                                    >
+                                    <Button key={p.id} variant="default" asChild className="flex-1">
                                         <a href={p.link} className="flex gap-2">
                                             {platformIcons[p.id]}
                                             {capitalizePlatformId(p.id)}
