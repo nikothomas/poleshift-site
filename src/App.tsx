@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Typewriter } from "@/components/ui/typewriter";
 import { Button } from "@/components/ui/button"; // Adjust path to your shadcn/ui button
 import "./App.css";
@@ -19,7 +19,7 @@ const NSIS = new URL(
 import { FaWindows, FaApple, FaLinux } from "react-icons/fa";
 
 // Lazy load the globe
-const GlobeComponent = lazy(() => import("@/components/Globe.tsx"));
+import GlobeComponent from '@/components/Globe.tsx'
 
 // Page metadata
 export function meta() {
@@ -151,9 +151,7 @@ export default function App() {
                 {/* Right Column: Globe */}
                 {/* Remove negative z-index and let it simply fill the second column */}
                 <div className="flex items-center justify-center w-full h-full">
-                    <Suspense fallback={<p>Loading...</p>}>
                         <GlobeComponent />
-                    </Suspense>
                 </div>
             </section>
 
