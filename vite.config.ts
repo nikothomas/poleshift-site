@@ -14,10 +14,10 @@ export default defineConfig({
     strictPort: true,
   },
   server: {
-    port: 8080,
+    port: 80,
     strictPort: true,
     host: true,
-    origin: "http://localhost:8080",
+    origin: "https://poleshift.cloud:80",
   },
   plugins: [react()],
 })
