@@ -11,5 +11,11 @@ export default defineConfig({
       '@components': path.resolve(__dirname, './src/components'),
     },
   },
+  server: {
+    port: 8080,
+    strictPort: true,
+    host: true,
+    origin: "http://localhost:8080",
+  },
   plugins: [react()],
 })

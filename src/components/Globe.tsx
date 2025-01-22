@@ -1,93 +1,106 @@
-import React from "react";
-import { geoOrthographic, geoPath } from "d3-geo";
-import { timer, type Timer } from "d3-timer";
-import { feature } from "topojson-client";
+import React from 'react'
+import { wrap, Remote } from 'comlink'
+import GlobeWorker from '../workers/globe.worker?worker'
 
-// 1) Directly import your local TopoJSON file.
-//    Make sure your bundler/TypeScript config allows importing JSON files.
-import topoData from "../assets/globe-geo.json";
-
-interface GlobeProps {}
-interface GlobeState {
-    rotation: [number, number, number];
-    geoData: any; // Holds the converted GeoJSON
+// Shape of the worker's exposed methods
+interface GlobeWorkerAPI {
+    setDimensions: (w: number, h: number) => Promise<void>
+    updateGlobePaths: () => Promise<{
+        rotation: [number, number, number]
+        paths: string[]
+        radius: number
+    }>
+    getGeoData: () => Promise<any>
 }
 
-class Globe extends React.Component<GlobeProps, GlobeState> {
-    private rotationTimer: Timer | null = null;
+interface GlobeState {
+    paths: string[]
+    radius: number
+}
 
-    constructor(props: GlobeProps) {
-        super(props);
+class Globe extends React.Component<{}, GlobeState> {
+    private worker: Worker | null = null
+    private workerApi: Remote<GlobeWorkerAPI> | null = null
+    private frameId: number | null = null
 
-        // 2) Convert TopoJSON to GeoJSON right in the constructor (or anywhere convenient).
-        //    Make sure "countries" matches the name in your TopoJSON’s "objects" key.
-        // @ts-ignore
-        const converted = feature(topoData, topoData.objects.countries);
-
+    constructor(props: {}) {
+        super(props)
         this.state = {
-            rotation: [0, 0, 0],
-            geoData: converted,
-        };
+            paths: [],
+            radius: 100, // default radius
+        }
     }
 
     componentDidMount() {
-        // 3) Start rotation (no fetch needed anymore)
-        this.rotationTimer = timer(() => {
-            this.setState(({ rotation: [lambda, phi, gamma] }) => ({
-                rotation: [lambda + 0.015, phi + 0.015, gamma],
-            }));
-        });
+        // 1) Create the worker and wrap it
+        this.worker = new GlobeWorker()
+        this.workerApi = wrap<GlobeWorkerAPI>(this.worker)
+
+        // 2) Initialize once dimension is known (say 800×800).
+        //    You can also pass props or figure out container dims dynamically.
+        this.initWorker(800, 800)
     }
 
     componentWillUnmount() {
-        if (this.rotationTimer) {
-            this.rotationTimer.stop();
+        if (this.frameId) cancelAnimationFrame(this.frameId)
+        if (this.worker) this.worker.terminate()
+    }
+
+    async initWorker(width: number, height: number) {
+        if (!this.workerApi) return
+        await this.workerApi.setDimensions(width, height)
+
+        // 3) Start the animation loop (requestAnimationFrame)
+        const animate = async () => {
+            if (!this.workerApi) return
+            // 4) Request new rotation + path strings from the worker
+            const { paths, radius } = await this.workerApi.updateGlobePaths()
+
+            // 5) Update local React state so we can re-render
+            this.setState({ paths, radius })
+
+            this.frameId = requestAnimationFrame(animate)
         }
+        this.frameId = requestAnimationFrame(animate)
     }
 
     render() {
-        const { rotation, geoData } = this.state;
+        const { paths, radius } = this.state
 
-        // If you want a loading check:
-        if (!geoData) {
-            return <div>Loading...</div>;
-        }
-
-        // 4) Setup the projection
-        const projection = geoOrthographic()
-            .rotate(rotation)
-            .translate([400, 400]) // center in an 800×800 container
-            .clipAngle(180);
-
-        const pathGenerator = geoPath(projection);
+        // If you have a dynamic width/height, store them in state or pass as props
+        const width = 800
+        const height = 800
 
         return (
-            <div style={{ width: 800, height: 800 }}>
-                <svg width={800} height={800}>
+            <div style={{ width, height }}>
+                <svg width={width} height={height}>
+                    {/* Outer Circle (using worker-computed radius) */}
                     <circle
-                        cx={400}
-                        cy={400}
-                        r={projection.scale()}
+                        cx={width / 2}
+                        cy={height / 2}
+                        r={radius}
                         fill="rgba(200, 200, 200, 0.05)"
                         stroke="rgba(80, 80, 80, 0.5)"
                     />
+
+                    {/* Render each path string */}
                     <g>
-                        {geoData.features.map((featureObj: any, i: number) => (
+                        {paths.map((d, i) => (
                             <path
                                 key={i}
-                                d={pathGenerator(featureObj) || ""}
+                                d={d}
                                 style={{
-                                    fill: "rgba(200, 200, 200, 0.3)",
-                                    stroke: "rgba(80, 80, 80, 0.5)",
-                                    pointerEvents: "none",
+                                    fill: 'rgba(200, 200, 200, 0.3)',
+                                    stroke: 'rgba(80, 80, 80, 0.5)',
+                                    pointerEvents: 'none',
                                 }}
                             />
                         ))}
                     </g>
                 </svg>
             </div>
-        );
+        )
     }
 }
 
-export default Globe;
+export default Globe
