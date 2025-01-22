@@ -1,8 +1,9 @@
 import { Suspense, lazy, type ReactElement } from "react";
 import { Typewriter } from "@/components/ui/typewriter";
-import { Button } from "@/components/ui/button"; // Adjust path to your shadcn/ui button
+import { Button } from "@/components/ui/button";
 import "./App.css";
 import { FaWindows, FaApple, FaLinux } from "react-icons/fa";
+import { SiSnapcraft } from "react-icons/si";
 
 // Detect user OS up front (avoids reordering after first render)
 function getUserPlatform() {
@@ -17,20 +18,23 @@ function getUserPlatform() {
 
 // Pre-load your platform logic
 const DMG = new URL(
-    "https://releases.poleshift.cloud/poleshift_0.1.9_aarch64.dmg",
+    "https://releases.poleshift.cloud/poleshift_0.1.10_aarch64.dmg",
     import.meta.url
 ).href;
 const AppImage = new URL(
-    "https://releases.poleshift.cloud/poleshift_0.1.9_amd64.AppImage",
+    "https://releases.poleshift.cloud/poleshift_0.1.10_amd64.AppImage",
     import.meta.url
 ).href;
 const NSIS = new URL(
-    "https://releases.poleshift.cloud/poleshift_0-1.1.9_x64-setup.exe",
+    "https://releases.poleshift.cloud/poleshift_0-1.1.10_x64-setup.exe",
     import.meta.url
 ).href;
 
+// (Example link) Replace with your Snap store URL
+const SNAP_STORE_LINK = "https://snapcraft.io/poleshift";
+
 // Define platforms
-type PlatformId = "windows" | "mac" | "linux";
+type PlatformId = "windows" | "mac" | "linux" | "snap";
 interface Platform {
     id: PlatformId;
     label: string;
@@ -42,12 +46,14 @@ const allPlatforms: Platform[] = [
     { id: "windows", label: "Download for Windows", link: NSIS },
     { id: "mac",     label: "Download for Mac",     link: DMG },
     { id: "linux",   label: "Download for Linux",   link: AppImage },
+    { id: "snap",    label: "Download from Snap Store", link: SNAP_STORE_LINK },
 ];
 
 const platformIcons: Record<PlatformId, ReactElement> = {
     windows: <FaWindows />,
     mac: <FaApple />,
     linux: <FaLinux />,
+    snap: <SiSnapcraft />,
 };
 
 const texts = [" elegant", " intuitive", " fun", " your data"];
@@ -71,14 +77,10 @@ export default function App() {
     const userPlatform = getUserPlatform();
 
     // 2) Reorder platforms array so that user's platform is always first
-    const primaryPlatform = allPlatforms.find(p => p.id === userPlatform) ?? allPlatforms[2];
-    const rest = allPlatforms.filter(p => p.id !== primaryPlatform.id);
+    const primaryPlatform =
+        allPlatforms.find((p) => p.id === userPlatform) ?? allPlatforms[2];
+    const rest = allPlatforms.filter((p) => p.id !== primaryPlatform.id);
     const platformsInOrder = [primaryPlatform, ...rest];
-
-    // Helper
-    function capitalizePlatformId(platformId: string) {
-        return platformId.charAt(0).toUpperCase() + platformId.slice(1);
-    }
 
     return (
         <main className="relative h-screen w-screen overflow-auto bg-background text-foreground">
@@ -90,43 +92,42 @@ export default function App() {
                         <Typewriter texts={texts} delay={0.5} baseText="" />
                     </p>
 
-                    {/* Buttons */}
+                    {/* Buttons in a single column */}
                     {platformsInOrder.length > 0 && (
-                        <div className="m-16 flex flex-col items-center gap-3">
-                            {/* 1) Primary platform button */}
-                            <Button
-                                key={platformsInOrder[0].id}
-                                variant="default"
-                                asChild
-                            >
-                                <a
-                                    href={platformsInOrder[0].link}
-                                    className="flex items-center gap-2"
+                        <div className="m-16 flex flex-col items-center gap-3 w-full max-w-sm">
+                            {platformsInOrder.map((platform) => (
+                                <Button
+                                    key={platform.id}
+                                    variant="default"
+                                    asChild
+                                    className="w-full flex justify-center gap-2"
                                 >
-                                    {platformIcons[platformsInOrder[0].id]}
-                                    {platformsInOrder[0].label}
-                                </a>
-                            </Button>
-
-                            {/* 2) Secondary platforms side-by-side */}
-                            <div className="flex gap-2">
-                                {platformsInOrder.slice(1).map((p) => (
-                                    <Button key={p.id} variant="default" asChild className="flex-1">
-                                        <a href={p.link} className="flex gap-2">
-                                            {platformIcons[p.id]}
-                                            {capitalizePlatformId(p.id)}
-                                        </a>
-                                    </Button>
-                                ))}
-                            </div>
+                                    <a
+                                        href={platform.link}
+                                        className="flex items-center gap-2 justify-center"
+                                    >
+                                        {platformIcons[platform.id]}
+                                        {platform.label}
+                                    </a>
+                                </Button>
+                            ))}
                         </div>
                     )}
                 </div>
 
+                {/* Right Column: Globe */}
                 <div className="flex items-center justify-center w-full h-full">
                     <Suspense
                         fallback={
-                            <div style={{ width: 800, height: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div
+                                style={{
+                                    width: 800,
+                                    height: 800,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
                                 <p>Loading globe...</p>
                             </div>
                         }
@@ -137,17 +138,7 @@ export default function App() {
             </section>
 
             {/* Footer */}
-            <footer
-                className="
-          fixed
-          bottom-0
-          w-full
-          text-xs
-          text-center
-          p-2
-          z-30
-        "
-            >
+            <footer className="fixed bottom-0 w-full text-xs text-center p-2 z-30">
                 &copy; {new Date().getFullYear()} IcarAI LLC. All rights reserved.&nbsp;
                 <a
                     href="https://icarai.io"
