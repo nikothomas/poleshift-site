@@ -10,14 +10,14 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 443,
+    port: 8080,
     strictPort: true,
   },
   server: {
-    port: 443,
+    port: 8080,
     strictPort: true,
     host: true,
-    origin: "https://0.0.0.0:443",
+    origin: "https://0.0.0.0:8080",
   },
   plugins: [react()],
 })
