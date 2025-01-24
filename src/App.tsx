@@ -26,7 +26,7 @@ const AppImage = new URL(
     import.meta.url
 ).href;
 const NSIS = new URL(
-    "https://releases.poleshift.cloud/poleshift_0.1.11_x64-setup.exe",
+    "https://releases.poleshift.cloud/poleshift_0.1.11_x64_en-US.msi",
     import.meta.url
 ).href;
 
